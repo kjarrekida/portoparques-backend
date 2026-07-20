@@ -1,25 +1,25 @@
 require('dotenv').config();
-const nodemailer = require('nodemailer');
 
-// Configuración del transporter (SMTP)
-// Para Gmail, necesitas generar una "Contraseña de Aplicación" en tu cuenta de Google.
-const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 465,
-  secure: true,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-  // Forzar IPv4 debido a que la capa gratuita de Render bloquea a veces conexiones IPv6 salientes
-  tls: {
-    rejectUnauthorized: false
-  },
-  connectionTimeout: 10000,
-  family: 4
-});
-
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbwgt_RZbbEnAE8h8sO_IZJG9CavwF476hp9OQsivEvoBiyZvxbLqqe6VQeEW_4tOe1k/exec';
 const CORREO_INSTITUCIONAL = 'info@portoparques.gob.ec';
+
+async function sendEmailViaGAS({ to, subject, html, replyTo }) {
+  try {
+    const response = await fetch(GAS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ to, subject, html, replyTo })
+    });
+    const data = await response.json();
+    if (!data.success) {
+      throw new Error(data.error || 'Error desconocido en Google Apps Script');
+    }
+    return data;
+  } catch (error) {
+    console.error('Error en sendEmailViaGAS:', error);
+    throw error;
+  }
+}
 
 function obtenerNotaServicio(tipoServicio) {
   if (tipoServicio === 'Poda Pública' || tipoServicio === 'Poda Publica') {
@@ -90,14 +90,13 @@ async function enviarCorreoCiudadano(datos) {
   `;
 
   try {
-    await transporter.sendMail({
-      from: '"Portoparques EP" <info@portoparques.gob.ec>',
+    await sendEmailViaGAS({
       replyTo: CORREO_INSTITUCIONAL,
       to: datos.correo,
       subject: `Confirmacion de Trámite - ${datos.id}`,
       html: htmlTemplate,
     });
-    console.log('Correo a ciudadano enviado');
+    console.log('Correo a ciudadano enviado por GAS');
   } catch (error) {
     console.error('Error enviando correo al ciudadano:', error);
   }
@@ -169,13 +168,12 @@ async function enviarCorreoInstitucional(datos) {
   `;
 
   try {
-    await transporter.sendMail({
-      from: '"Sistema Web" <info@portoparques.gob.ec>',
+    await sendEmailViaGAS({
       to: CORREO_INSTITUCIONAL,
       subject: `Nueva Solicitud de ${datos.tipoServicio} - ${datos.id}`,
       html: htmlTemplate,
     });
-    console.log('Correo institucional enviado');
+    console.log('Correo institucional enviado por GAS');
   } catch (error) {
     console.error('Error enviando correo institucional:', error);
   }
@@ -240,13 +238,12 @@ async function enviarCorreoRutaDiaria(solicitudesDelDia, correoJefe) {
   `;
 
   try {
-    await transporter.sendMail({
-      from: `"Portoparques EP" <${process.env.EMAIL_USER}>`,
+    await sendEmailViaGAS({
       to: correoJefe,
       subject: `Ruta de Trabajo Diaria - ${new Date().toLocaleDateString('es-EC')}`,
       html: html
     });
-    console.log(`Correo de ruta diaria enviado exitosamente a ${correoJefe} con ${solicitudesDelDia.length} puntos.`);
+    console.log(`Correo de ruta diaria enviado por GAS exitosamente a ${correoJefe} con ${solicitudesDelDia.length} puntos.`);
   } catch (error) {
     console.error('Error enviando correo de ruta diaria:', error);
   }
@@ -286,14 +283,13 @@ async function enviarCorreoActualizacionEstado(datos) {
   `;
 
   try {
-    await transporter.sendMail({
-      from: '"Portoparques EP" <info@portoparques.gob.ec>',
+    await sendEmailViaGAS({
       replyTo: CORREO_INSTITUCIONAL,
       to: datos.correo,
       subject: `Actualización de su trámite ${datos.id} - ${datos.estado}`,
       html: htmlTemplate,
     });
-    console.log('Correo de actualización de estado enviado a:', datos.correo);
+    console.log('Correo de actualización de estado enviado por GAS a:', datos.correo);
   } catch (error) {
     console.error('Error enviando correo de estado:', error);
   }
