@@ -4,11 +4,19 @@ const nodemailer = require('nodemailer');
 // Configuración del transporter (SMTP)
 // Para Gmail, necesitas generar una "Contraseña de Aplicación" en tu cuenta de Google.
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: 'smtp.gmail.com',
+  port: 465,
+  secure: true,
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
+  // Forzar IPv4 debido a que la capa gratuita de Render bloquea a veces conexiones IPv6 salientes
+  tls: {
+    rejectUnauthorized: false
+  },
+  connectionTimeout: 10000,
+  family: 4
 });
 
 const CORREO_INSTITUCIONAL = 'info@portoparques.gob.ec';
