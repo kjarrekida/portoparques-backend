@@ -368,9 +368,9 @@ app.listen(PORT, () => {
 // ==========================================
 
 // Ejecutar todos los días a las 06:45 AM (Hora de servidor)
-// Ejecutar cada minuto (TEMPORAL PARA PRUEBAS)
-// "* * * * *"
-cron.schedule('* * * * *', async () => {
+// Ejecutar todos los días a las 06:45 AM (Hora de servidor)
+// "45 6 * * *"
+cron.schedule('45 6 * * *', async () => {
   console.log('Cron Job: Verificando solicitudes planificadas para hoy a las 06:45 AM');
   try {
     const startOfDay = new Date();
