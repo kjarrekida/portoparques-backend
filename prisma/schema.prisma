@@ -1,0 +1,41 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Solicitud {
+  id                String    @id
+  tipoServicio      String
+  fecha             DateTime  @default(now())
+  nombreApellidos   String
+  direccion         String
+  ubicacionMaps     String
+  parroquia         String
+  cedula            String
+  telefono          String
+  correo            String
+  numeroArboles     Int
+  comentario        String
+  observaciones     String?
+  fotoAntes         String?
+  resolucionPdf     String?
+  fotoDespues       String?
+  estado            String    @default("Ingresado")
+  motivoCancelacion String?
+  fechaAtencion     DateTime?
+  fechaPlanificada  DateTime?
+}
+
+model Usuario {
+  id           String   @id @default(uuid())
+  username     String   @unique
+  passwordHash String
+  rol          String   @default("TECNICO")
+  estado       String   @default("Activo")
+  createdAt    DateTime @default(now())
+}
