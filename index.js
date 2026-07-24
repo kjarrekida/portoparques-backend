@@ -6,6 +6,7 @@ const path = require('path');
 const cron = require('node-cron');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const rateLimit = require('express-rate-limit');
 const { PrismaClient } = require('@prisma/client');
 const { enviarCorreoCiudadano, enviarCorreoInstitucional, enviarCorreoRutaDiaria, enviarCorreoActualizacionEstado } = require('./mailer');
 const { verifyToken, requireRole, JWT_SECRET } = require('./auth');
@@ -31,6 +32,15 @@ const storage = multer.diskStorage({
   }
 });
 const upload = multer({ storage: storage });
+
+// Rate Limiter: Máximo 5 solicitudes por IP cada 15 minutos para el endpoint público
+const solicitudLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 5,
+  message: { status: 'error', message: 'Demasiadas solicitudes desde esta IP. Intente nuevamente en 15 minutos.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 // Generador de ID
 async function generarNuevoId() {
@@ -61,7 +71,7 @@ async function generarNuevoId() {
 
 // Endpoint para crear solicitud
 // Acepta multipart/form-data con los campos fotoAntes y resolucion
-app.post('/api/solicitudes', upload.fields([
+app.post('/api/solicitudes', solicitudLimiter, upload.fields([
   { name: 'fotoAntes', maxCount: 1 },
   { name: 'resolucion', maxCount: 1 }
 ]), async (req, res) => {
