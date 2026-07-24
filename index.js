@@ -69,12 +69,38 @@ async function generarNuevoId() {
   return `PP-PODA-${currentYear}-${paddedNumber}`;
 }
 
+// Middleware para verificar Cloudflare Turnstile
+const verifyTurnstile = async (req, res, next) => {
+  const turnstileToken = req.body.turnstileToken;
+  if (!turnstileToken) {
+    return res.status(400).json({ status: 'error', message: 'Falta validación de seguridad (Captcha).' });
+  }
+
+  try {
+    const formData = new URLSearchParams();
+    formData.append('secret', '0x4AAAAAAD837L_QrjnRhq1SQRAxdLR04w4');
+    formData.append('response', turnstileToken);
+
+    const response = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+      method: 'POST',
+      body: formData
+    });
+    
+    const result = await response.json();
+    if (result.success) {
+      next();
+    } else {
+      res.status(400).json({ status: 'error', message: 'Verificación de seguridad fallida. Sesión expirada o bot detectado.' });
+    }
+  } catch (error) {
+    console.error('Turnstile verification error:', error);
+    res.status(500).json({ status: 'error', message: 'Error de verificación de seguridad.' });
+  }
+};
+
 // Endpoint para crear solicitud
 // Acepta multipart/form-data con los campos fotoAntes y resolucion
-app.post('/api/solicitudes', solicitudLimiter, upload.fields([
-  { name: 'fotoAntes', maxCount: 1 },
-  { name: 'resolucion', maxCount: 1 }
-]), async (req, res) => {
+app.post('/api/solicitudes', solicitudLimiter, upload.fields([{ name: 'fotoAntes', maxCount: 1 }, { name: 'resolucion', maxCount: 1 }]), verifyTurnstile, async (req, res) => {
   try {
     const data = req.body;
     
